@@ -1,25 +1,27 @@
 import React, { useState, useEffect } from 'react';
 
 const AuthModal = ({ isOpen, onClose, initialMode, onSuccess }) => {
-    // 1. Explicitly declare all the missing state variables
     const [authMode, setAuthMode] = useState(initialMode || 'login');
     const [isLoading, setIsLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
     const [formData, setFormData] = useState({
-        fullName: '',
+        fullName: '', // Note: Your backend doesn't save this yet, but we keep it for the UI
         email: '',
         password: ''
     });
 
-    // 2. Sync the modal view if initialMode changes from the Navbar clicks
+    // Automatically use your live backend URL on Vercel, or localhost when testing locally
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
     useEffect(() => {
         if (isOpen) {
             setAuthMode(initialMode);
+            setErrorMsg(''); // Clear errors when modal opens
         }
     }, [isOpen, initialMode]);
 
     if (!isOpen) return null;
 
-    // 3. Handle live input typing
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -27,17 +29,44 @@ const AuthModal = ({ isOpen, onClose, initialMode, onSuccess }) => {
         });
     };
 
-    // 4. Handle the form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
+        setErrorMsg('');
         
-        // Placeholder for your actual backend API call
-        setTimeout(() => {
-            setIsLoading(false);
+        const endpoint = authMode === 'login' ? '/api/login' : '/api/signup';
+        
+        try {
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.email,
+                    password: formData.password
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Authentication failed');
+            }
+
+            // Real backend connection successful! Save the real JWT token.
+            localStorage.setItem('token', data.token);
+            
+            // Optional: Save user data to show their email/status in the navbar later
+            localStorage.setItem('user', JSON.stringify(data.user)); 
+
             if (onSuccess) onSuccess();
             onClose();
-        }, 1000);
+        } catch (err) {
+            setErrorMsg(err.message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -48,17 +77,23 @@ const AuthModal = ({ isOpen, onClose, initialMode, onSuccess }) => {
                 <div className="flex justify-between mb-4 border-b">
                     <button 
                         className={`pb-2 w-1/2 transition-colors ${authMode === 'login' ? 'border-b-2 border-blue-600 font-bold text-blue-600' : 'text-gray-500'}`} 
-                        onClick={() => setAuthMode('login')}
+                        onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
                     >
                         Login
                     </button>
                     <button 
                         className={`pb-2 w-1/2 transition-colors ${authMode === 'signup' ? 'border-b-2 border-blue-600 font-bold text-blue-600' : 'text-gray-500'}`} 
-                        onClick={() => setAuthMode('signup')}
+                        onClick={() => { setAuthMode('signup'); setErrorMsg(''); }}
                     >
                         Sign Up
                     </button>
                 </div>
+
+                {errorMsg && (
+                    <div className="mb-3 p-2 bg-red-100 text-red-700 text-sm rounded text-center">
+                        {errorMsg}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                     {authMode === 'signup' && (
@@ -103,7 +138,7 @@ const AuthModal = ({ isOpen, onClose, initialMode, onSuccess }) => {
                     {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
                     <span 
                         className="text-blue-600 cursor-pointer font-bold hover:underline"
-                        onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                        onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setErrorMsg(''); }}
                     >
                         {authMode === 'login' ? 'Sign Up' : 'Log In'}
                     </span>
