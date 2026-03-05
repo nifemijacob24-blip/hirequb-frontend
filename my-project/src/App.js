@@ -8,6 +8,7 @@ import CategoryView from './components/CategoryView';
 import Contact from './components/Contact';
 import AuthModal from './components/authmodal'; // NEW: Imported your AuthModal
 import './App.css';
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 function App() {
   const [jobs, setJobs] = useState([]);
@@ -146,6 +147,7 @@ function App() {
             window.location.reload(); 
         }}
       />
+      <SpeedInsights />
     </div>
   );
 }
