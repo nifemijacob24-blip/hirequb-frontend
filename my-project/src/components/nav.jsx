@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import AuthModal from './authmodal'; 
 
-function Navbar({ onViewChange }) {
+// Notice we added openAuth to the props here
+function Navbar({ onViewChange, openAuth }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState('login');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -21,19 +19,15 @@ function Navbar({ onViewChange }) {
     window.location.reload(); 
   };
 
-  const openAuth = (mode) => {
-    setAuthMode(mode);
-    setIsModalOpen(true);
-    setIsMobileMenuOpen(false); 
-  };
-
-  const handleAuthSuccess = () => {
-    setIsLoggedIn(true);
-  };
-
   const handleNavClick = (view) => {
     onViewChange(view);
     setIsMobileMenuOpen(false); 
+  };
+
+  // NEW: A clean helper function to open the global modal and close the mobile menu
+  const handleAuthClick = (mode) => {
+    if (openAuth) openAuth(mode);
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -91,13 +85,13 @@ function Navbar({ onViewChange }) {
               ) : (
                 <>
                   <button 
-                    onClick={() => openAuth('login')}
+                    onClick={() => handleAuthClick('login')}
                     className="hidden md:block text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white font-medium transition-colors"
                   >
                     Log In
                   </button>
                   <button 
-                    onClick={() => openAuth('signup')}
+                    onClick={() => handleAuthClick('signup')}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm"
                   >
                     Sign Up
@@ -158,13 +152,13 @@ function Navbar({ onViewChange }) {
             ) : (
               <>
                 <button 
-                  onClick={() => openAuth('login')}
+                  onClick={() => handleAuthClick('login')}
                   className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
                 >
                   Log In
                 </button>
                 <button 
-                  onClick={() => openAuth('signup')}
+                  onClick={() => handleAuthClick('signup')}
                   className="block w-full text-left px-3 py-2 mt-1 rounded-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700 shadow-sm"
                 >
                   Sign Up
@@ -174,13 +168,6 @@ function Navbar({ onViewChange }) {
           </div>
         )}
       </nav>
-
-      <AuthModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        initialMode={authMode}
-        onSuccess={handleAuthSuccess}
-      />
     </>
   );
 }

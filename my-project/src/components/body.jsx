@@ -6,6 +6,7 @@ const JobFeedBody = ({ jobId, title, company, location, department, url, isPremi
   const [isHidden, setIsHidden] = useState(false);
   const [isMarking, setIsMarking] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showGuestLimitModal, setShowGuestLimitModal] = useState(false);
   
   const token = localStorage.getItem('token');
   const isLoggedIn = !!token;
@@ -44,22 +45,13 @@ const JobFeedBody = ({ jobId, title, company, location, department, url, isPremi
             guestApplies += 1;
             localStorage.setItem('guest_applies', guestApplies);
             
-            // Send them directly to the job application URL
+            // Send them directly to the job application URL silently
             window.open(url, '_blank');
-            
-            // Let them know their trial is running out
-            if (guestApplies === 2) {
-                alert("That was your last free guest apply! Create an account to keep applying.");
-            }
         } else {
-            // Out of free applies! Pop the modal to force signup.
-            if (openAuth) {
-                openAuth('signup');
-            } else {
-                alert("Please sign up to continue applying.");
-            }
+            // Out of free applies! Pop the beautifully branded marketing modal.
+            setShowGuestLimitModal(true);
         }
-        return; // Stop execution here so it doesn't try to hit your backend
+        return; 
     }
 
     // SCENARIO 2: Logged In User (Hits the backend)
@@ -233,6 +225,42 @@ const JobFeedBody = ({ jobId, title, company, location, department, url, isPremi
                 style={payButtonStyle}
               >
                 Upgrade Now - $9.99 / month
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* NEW: Guest Limit Signup Wall Modal */}
+      {showGuestLimitModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalContentStyle}>
+            <h3 style={{ marginTop: 0, fontSize: '1.5rem', color: '#0f172a' }}>Keep Applying for Free!</h3>
+            <p style={{ color: '#475569', marginBottom: '20px' }}>
+              You've used your 2 free guest applications. Create a free account right now to continue applying and unlock powerful job-hunting tools.
+            </p>
+            
+            <ul style={featureListStyle}>
+              <li style={featureItemStyle}>✓ Get 5 more free applications instantly</li>
+              <li style={featureItemStyle}>✓ Track your application history</li>
+              <li style={featureItemStyle}>✓ Avoid ghost jobs and scams</li>
+              <li style={featureItemStyle}>✓ Get personalized remote job alerts</li>
+            </ul>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
+              <button 
+                onClick={() => setShowGuestLimitModal(false)} 
+                style={cancelButtonStyle}
+              >
+                Maybe Later
+              </button>
+              <button 
+                onClick={() => {
+                  setShowGuestLimitModal(false); // Close this modal
+                  if (openAuth) openAuth('signup'); // Open the main signup form
+                }} 
+                style={{...payButtonStyle, backgroundColor: '#2563eb'}} // Nice blue to match your theme
+              >
+                Create Free Account
               </button>
             </div>
           </div>
