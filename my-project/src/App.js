@@ -4,9 +4,10 @@ import JobFilter from './components/filter';
 import JobFeedBody from './components/body';
 import AppliedJobs from './components/applied'; 
 import ManageBilling from './components/billing';
-import CategoryView from './components/CategoryView'; // NEW: Imported your SEO component
-import './App.css';
+import CategoryView from './components/CategoryView';
 import Contact from './components/Contact';
+import AuthModal from './components/authmodal'; // NEW: Imported your AuthModal
+import './App.css';
 
 function App() {
   const [jobs, setJobs] = useState([]);
@@ -20,7 +21,16 @@ function App() {
   
   const [currentView, setCurrentView] = useState('feed'); 
 
-  // NEW: Initial routing check to see if someone landed from Google
+  // NEW: State to control the AuthModal globally from App.js
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('signup');
+
+  // NEW: Function to easily pop the modal open from anywhere
+  const openAuth = (mode = 'signup') => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
   useEffect(() => {
     const path = window.location.pathname;
     
@@ -76,7 +86,8 @@ function App() {
 
   return (
     <div>
-      <Navbar onViewChange={setCurrentView} />
+      {/* UPDATED: Passed openAuth to Navbar so its login buttons still work */}
+      <Navbar onViewChange={setCurrentView} openAuth={openAuth} />
       
       {currentView === 'feed' && (
         <>
@@ -92,6 +103,7 @@ function App() {
                 department={job.department}
                 url={job.apply_url}
                 isPremium={job.is_premium}
+                openAuth={openAuth} // NEW: Passed openAuth to the job card
               />
             ))}
           </div>
@@ -120,12 +132,20 @@ function App() {
       )}
 
       {currentView === 'applied' && <AppliedJobs />}
-      
       {currentView === 'billing' && <ManageBilling />}
-
-      {/* NEW: Renders the dynamic programmatic SEO page */}
-      {currentView === 'category' && <CategoryView />} 
+      {currentView === 'category' && <CategoryView openAuth={openAuth} />} {/* Passed to CategoryView too in case SEO visitors click apply */}
       {currentView === 'contact' && <Contact />}
+
+      {/* NEW: Global AuthModal controlled by App.js */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        initialMode={authModalMode}
+        onSuccess={() => {
+            // Optional: Force a refresh to update the UI once they successfully log in
+            window.location.reload(); 
+        }}
+      />
     </div>
   );
 }

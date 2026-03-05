@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 
-const JobFeedBody = ({ jobId, title, company, location, department, url, isPremium }) => {
+// Notice I added 'openAuth' to the props list here
+const JobFeedBody = ({ jobId, title, company, location, department, url, isPremium, openAuth }) => {
   const [isHidden, setIsHidden] = useState(false);
   const [isMarking, setIsMarking] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
@@ -9,7 +10,6 @@ const JobFeedBody = ({ jobId, title, company, location, department, url, isPremi
   const token = localStorage.getItem('token');
   const isLoggedIn = !!token;
   const isPremiumUser = localStorage.getItem('isPremium') === 'true';
-  // Parse the free applies count, defaulting to 0 if not logged in
   const freeApplies = parseInt(localStorage.getItem('freeApplies') || '0', 10);
 
   const config = {
@@ -33,15 +33,36 @@ const JobFeedBody = ({ jobId, title, company, location, department, url, isPremi
   const handleFlutterPayment = useFlutterwave(config);
 
   const handleApplyClick = async (jobId) => {
-    // 1. Check login status instantly before doing anything else
     const token = localStorage.getItem('token');
     
+    // SCENARIO 1: Anonymous Guest User (Not Logged In)
     if (!token) {
-        alert("Please log in to apply for this job.");
-        return; // The function stops here, meaning the blank window never opens
+        let guestApplies = parseInt(localStorage.getItem('guest_applies')) || 0;
+
+        if (guestApplies < 2) {
+            // They still have free guest applies
+            guestApplies += 1;
+            localStorage.setItem('guest_applies', guestApplies);
+            
+            // Send them directly to the job application URL
+            window.open(url, '_blank');
+            
+            // Let them know their trial is running out
+            if (guestApplies === 2) {
+                alert("That was your last free guest apply! Create an account to keep applying.");
+            }
+        } else {
+            // Out of free applies! Pop the modal to force signup.
+            if (openAuth) {
+                openAuth('signup');
+            } else {
+                alert("Please sign up to continue applying.");
+            }
+        }
+        return; // Stop execution here so it doesn't try to hit your backend
     }
 
-    // 2. NOW open the blank window for Safari, since we know they are logged in
+    // SCENARIO 2: Logged In User (Hits the backend)
     let newWindow = null;
     if (typeof window !== 'undefined') {
         newWindow = window.open('', '_blank');
@@ -84,7 +105,7 @@ const JobFeedBody = ({ jobId, title, company, location, department, url, isPremi
         if (newWindow) newWindow.close();
         console.error("Apply error:", error);
     }
-};
+  };
 
   const proceedToPayment = () => {
     handleFlutterPayment({
@@ -138,7 +159,6 @@ const JobFeedBody = ({ jobId, title, company, location, department, url, isPremi
 
   if (isHidden) return null;
 
-  // Determine what text to show on the apply button
   let applyButtonText = 'Apply Now';
   if (isPremium && !isPremiumUser) {
     if (freeApplies > 0) {
